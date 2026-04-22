@@ -24,17 +24,35 @@ import PricingContent from './content/PricingContent';
 import ModelDetailSideSheet from '../modal/ModelDetailSideSheet';
 import { useModelPricingData } from '../../../../hooks/model-pricing/useModelPricingData';
 import { useIsMobile } from '../../../../hooks/common/useIsMobile';
+import { StatusContext } from '../../../../context/Status';
 
 const PricingPage = () => {
   const pricingData = useModelPricingData();
   const { Sider, Content } = Layout;
   const isMobile = useIsMobile();
+  const [statusState] = React.useContext(StatusContext);
   const [showRatio, setShowRatio] = React.useState(false);
   const [viewMode, setViewMode] = React.useState('card');
+
+  // 从 StatusContext 中获取显示价格的配置
+  const showPrice = React.useMemo(() => {
+    try {
+      const headerNavModulesConfig = statusState?.status?.HeaderNavModules;
+      if (headerNavModulesConfig) {
+        const modules = JSON.parse(headerNavModulesConfig);
+        return modules.pricing?.showPrice !== false;
+      }
+    } catch (e) {
+      console.error('Failed to parse HeaderNavModules:', e);
+    }
+    return true;
+  }, [statusState?.status?.HeaderNavModules]);
+
   const allProps = {
     ...pricingData,
     showRatio,
     setShowRatio,
+    showPrice,
     viewMode,
     setViewMode,
   };
@@ -74,6 +92,7 @@ const PricingPage = () => {
         tokenUnit={pricingData.tokenUnit}
         displayPrice={pricingData.displayPrice}
         showRatio={allProps.showRatio}
+        showPrice={allProps.showPrice}
         vendorsMap={pricingData.vendorsMap}
         endpointMap={pricingData.endpointMap}
         autoGroups={pricingData.autoGroups}

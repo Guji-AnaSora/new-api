@@ -271,7 +271,7 @@ const PricingCardView = ({
                         {priceData.isDynamicPricing ? (
                           formatDynamicPriceSummary(priceData.billingExpr, t, priceData.usedGroupRatio)
                         ) : (
-                          formatPriceInfo(priceData, t, siteDisplayType)
+                          showPrice !== false && formatPriceInfo(priceData, t, siteDisplayType)
                         )}
                       </div>
                     </div>

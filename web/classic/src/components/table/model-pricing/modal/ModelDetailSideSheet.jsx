@@ -44,6 +44,7 @@ const ModelDetailSideSheet = ({
   vendorsMap,
   endpointMap,
   autoGroups,
+  showPrice,
   t,
 }) => {
   const isMobile = useIsMobile();
