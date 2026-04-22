@@ -43,6 +43,7 @@ const ModelDetailSideSheet = ({
   vendorsMap,
   endpointMap,
   autoGroups,
+  showPrice,
   t,
 }) => {
   const isMobile = useIsMobile();
@@ -89,18 +90,20 @@ const ModelDetailSideSheet = ({
               endpointMap={endpointMap}
               t={t}
             />
-            <ModelPricingTable
-              modelData={modelData}
-              groupRatio={groupRatio}
-              currency={currency}
-              siteDisplayType={siteDisplayType}
-              tokenUnit={tokenUnit}
-              displayPrice={displayPrice}
-              showRatio={showRatio}
-              usableGroup={usableGroup}
-              autoGroups={autoGroups}
-              t={t}
-            />
+            {showPrice !== false && (
+              <ModelPricingTable
+                modelData={modelData}
+                groupRatio={groupRatio}
+                currency={currency}
+                siteDisplayType={siteDisplayType}
+                tokenUnit={tokenUnit}
+                displayPrice={displayPrice}
+                showRatio={showRatio}
+                usableGroup={usableGroup}
+                autoGroups={autoGroups}
+                t={t}
+              />
+            )}
           </>
         )}
       </div>
