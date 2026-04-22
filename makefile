@@ -6,6 +6,7 @@ BACKEND_DIR = .
 
 all: build-all-frontends start-backend
 
+# 生产环境构建：构建前端静态文件
 build-frontend:
 	@echo "Building default frontend..."
 	@cd $(FRONTEND_DIR) && bun install && DISABLE_ESLINT_PLUGIN='true' VITE_REACT_APP_VERSION=$(cat ../../VERSION) bun run build
@@ -16,6 +17,7 @@ build-frontend-classic:
 
 build-all-frontends: build-frontend build-frontend-classic
 
+# 普通启动模式（无热更新）
 start-backend:
 	@echo "Starting backend dev server..."
 	@cd $(BACKEND_DIR) && go run main.go &
@@ -33,3 +35,8 @@ dev-web-classic:
 	@cd $(FRONTEND_CLASSIC_DIR) && bun install && bun run dev
 
 dev: dev-api dev-web
+
+# 推荐的开发模式：全栈热更新
+dev2:
+	@chmod +x dev.sh
+	@./dev.sh
