@@ -113,6 +113,7 @@ export const getPricingTableColumns = ({
   tokenUnit,
   displayPrice,
   showRatio,
+  showPrice,
 }) => {
   const isMobile = useIsMobile();
   const priceDataCache = new WeakMap();
@@ -254,6 +255,8 @@ export const getPricingTableColumns = ({
   if (showRatio) {
     columns.push(ratioColumn);
   }
-  columns.push(priceColumn);
+  if (showPrice !== false) {
+    columns.push(priceColumn);
+  }
   return columns;
 };

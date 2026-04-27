@@ -72,6 +72,7 @@ const PricingCardView = ({
   tokenUnit,
   displayPrice,
   showRatio,
+  showPrice,
   t,
   selectedRowKeys = [],
   setSelectedRowKeys,
@@ -268,10 +269,12 @@ const PricingCardView = ({
                         {model.model_name}
                       </h3>
                       <div className='flex flex-col gap-1 text-xs mt-1'>
-                        {priceData.isDynamicPricing ? (
-                          formatDynamicPriceSummary(priceData.billingExpr, t, priceData.usedGroupRatio)
-                        ) : (
-                          formatPriceInfo(priceData, t, siteDisplayType)
+                        {showPrice !== false && (
+                          priceData.isDynamicPricing ? (
+                            formatDynamicPriceSummary(priceData.billingExpr, t, priceData.usedGroupRatio)
+                          ) : (
+                            formatPriceInfo(priceData, t, siteDisplayType)
+                          )
                         )}
                       </div>
                     </div>

@@ -244,6 +244,9 @@ func GetAndValidateClaudeRequest(c *gin.Context) (textRequest *dto.ClaudeRequest
 	//	relayInfo.IsStream = true
 	//}
 
+	// 压缩超长的工具名称（上游 API 限制 64 字符）
+	compressClaudeToolNames(c, textRequest)
+
 	return textRequest, nil
 }
 
@@ -302,6 +305,12 @@ func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*dto.GeneralOpenA
 			return nil, errors.New("field instruction is required")
 		}
 	}
+
+	// 压缩超长的工具名称（上游 API 限制 64 字符）
+	if len(textRequest.Tools) > 0 {
+		compressOpenAIToolNames(c, textRequest)
+	}
+
 	return textRequest, nil
 }
 
@@ -318,6 +327,9 @@ func GetAndValidateGeminiRequest(c *gin.Context) (*dto.GeminiChatRequest, error)
 	//if c.Query("alt") == "sse" {
 	//	relayInfo.IsStream = true
 	//}
+
+	// 压缩超长的工具名称（上游 API 限制 64 字符）
+	compressGeminiToolNames(c, request)
 
 	return request, nil
 }
@@ -338,4 +350,260 @@ func GetAndValidateGeminiBatchEmbeddingRequest(c *gin.Context) (*dto.GeminiBatch
 		return nil, err
 	}
 	return request, nil
+}
+
+// compressOpenAIToolNames 压缩 OpenAI 格式请求中的超长工具名称
+func compressOpenAIToolNames(c *gin.Context, request *dto.GeneralOpenAIRequest) {
+	if len(request.Tools) == 0 {
+		return
+	}
+
+	// 收集所有工具名称
+	originalNames := make([]string, len(request.Tools))
+	for i, tool := range request.Tools {
+		originalNames[i] = tool.Function.Name
+	}
+
+	// 批量压缩并获取映射表
+	compressedNames, mapping := CompressToolNames(originalNames)
+
+	// 存储映射表到 Context（用于日志/调试）
+	StoreToolNameMapping(c, mapping)
+
+	// 更新工具名称
+	for i := range request.Tools {
+		request.Tools[i].Function.Name = compressedNames[i]
+	}
+
+	// 处理 messages 中的 tool_calls
+	compressToolCallsInMessages(c, request.Messages, mapping)
+
+	// 处理 tool_choice 中指定的函数名称
+	compressToolChoice(request, mapping)
+}
+
+// compressToolCallsInMessages 压缩消息中的 tool_call 名称
+func compressToolCallsInMessages(c *gin.Context, messages []dto.Message, mapping ToolNameMapping) {
+	for i := range messages {
+		toolCalls := messages[i].ParseToolCalls()
+		if len(toolCalls) == 0 {
+			continue
+		}
+
+		for j := range toolCalls {
+			originalName := toolCalls[j].Function.Name
+			if originalName == "" {
+				continue
+			}
+			compressed := CompressToolName(originalName)
+			if compressed != originalName {
+				toolCalls[j].Function.Name = compressed
+				if mapping != nil {
+					mapping[originalName] = compressed
+				}
+			}
+		}
+		messages[i].SetToolCalls(toolCalls)
+	}
+
+	// 更新映射表
+	if len(mapping) > 0 {
+		StoreToolNameMapping(c, mapping)
+	}
+}
+
+// compressToolChoice 压缩 tool_choice 中指定的函数名称
+func compressToolChoice(request *dto.GeneralOpenAIRequest, mapping ToolNameMapping) {
+	if request.ToolChoice == nil {
+		return
+	}
+
+	// 处理字符串值（auto/none/required 不需要处理）
+	if choiceStr, ok := request.ToolChoice.(string); ok {
+		return // auto/none/required 不涉及具体名称
+	}
+
+	// 处理对象值 {"type": "function", "function": {"name": "xxx"}}
+	choiceMap, ok := request.ToolChoice.(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	if choiceMap["type"] != "function" {
+		return
+	}
+
+	function, ok := choiceMap["function"].(map[string]interface{})
+	if !ok {
+		return
+	}
+
+	name, ok := function["name"].(string)
+	if !ok || name == "" {
+		return
+	}
+
+	compressed := CompressToolName(name)
+	if compressed != name {
+		function["name"] = compressed
+		if mapping != nil {
+			mapping[name] = compressed
+		}
+	}
+}
+
+// compressClaudeToolNames 压缩 Claude 格式请求中的超长工具名称
+func compressClaudeToolNames(c *gin.Context, request *dto.ClaudeRequest) {
+	mapping := make(ToolNameMapping)
+
+	// 处理 Tools 字段
+	if request.Tools != nil {
+		// Claude Tools 可能是 []any 或其他类型
+		toolsSlice, ok := request.Tools.([]any)
+		if ok && len(toolsSlice) > 0 {
+			normalTools, webSearchTools := dto.ProcessTools(toolsSlice)
+			// 只压缩普通工具的名称
+			for _, tool := range normalTools {
+				if tool.Name != "" && len(tool.Name) > MaxToolNameLength {
+					original := tool.Name
+					compressed := CompressToolName(original)
+					tool.Name = compressed
+					mapping[original] = compressed
+				}
+			}
+			// WebSearchTools 没有需要压缩的长名称字段
+		}
+	}
+
+	// 处理 Messages 中的 tool_use
+	for i := range request.Messages {
+		contentSlice, err := request.Messages[i].ParseContent()
+		if err != nil || len(contentSlice) == 0 {
+			continue
+		}
+		for j := range contentSlice {
+			if contentSlice[j].Type == "tool_use" && contentSlice[j].Name != "" {
+				original := contentSlice[j].Name
+				if len(original) > MaxToolNameLength {
+					compressed := CompressToolName(original)
+					contentSlice[j].Name = compressed
+					mapping[original] = compressed
+				}
+			}
+		}
+	}
+
+	// 处理 ToolChoice
+	if request.ToolChoice != nil {
+		// ToolChoice 可能是 ClaudeToolChoice 类型或 map
+		switch choice := request.ToolChoice.(type) {
+		case *dto.ClaudeToolChoice:
+			if choice.Name != "" && len(choice.Name) > MaxToolNameLength {
+				original := choice.Name
+				compressed := CompressToolName(original)
+				choice.Name = compressed
+				mapping[original] = compressed
+			}
+		case dto.ClaudeToolChoice:
+			if choice.Name != "" && len(choice.Name) > MaxToolNameLength {
+				original := choice.Name
+				compressed := CompressToolName(original)
+				request.ToolChoice = &dto.ClaudeToolChoice{
+					Type:                   choice.Type,
+					Name:                   compressed,
+					DisableParallelToolUse: choice.DisableParallelToolUse,
+				}
+				mapping[original] = compressed
+			}
+		case map[string]interface{}:
+			if name, ok := choice["name"].(string); ok && name != "" && len(name) > MaxToolNameLength {
+				original := name
+				compressed := CompressToolName(original)
+				choice["name"] = compressed
+				mapping[original] = compressed
+			}
+		}
+	}
+
+	if len(mapping) > 0 {
+		StoreToolNameMapping(c, mapping)
+	}
+}
+
+// compressGeminiToolNames 压缩 Gemini 格式请求中的超长工具名称
+func compressGeminiToolNames(c *gin.Context, request *dto.GeminiChatRequest) {
+	mapping := make(ToolNameMapping)
+
+	// 处理 Tools 字段
+	tools := request.GetTools()
+	if len(tools) > 0 {
+		for i := range tools {
+			if tools[i].FunctionDeclarations == nil {
+				continue
+			}
+			// FunctionDeclarations 可能是 []dto.FunctionRequest 或 []any
+			switch funcs := tools[i].FunctionDeclarations.(type) {
+			case []dto.FunctionRequest:
+				for j := range funcs {
+					name := funcs[j].Name
+					if name != "" && len(name) > MaxToolNameLength {
+						original := name
+						compressed := CompressToolName(original)
+						funcs[j].Name = compressed
+						mapping[original] = compressed
+					}
+				}
+				tools[i].FunctionDeclarations = funcs
+			case []interface{}:
+				for j, fn := range funcs {
+					if fnMap, ok := fn.(map[string]interface{}); ok {
+						if name, ok := fnMap["name"].(string); ok && name != "" && len(name) > MaxToolNameLength {
+							original := name
+							compressed := CompressToolName(original)
+							fnMap["name"] = compressed
+							funcs[j] = fnMap
+							mapping[original] = compressed
+						}
+					}
+				}
+				tools[i].FunctionDeclarations = funcs
+			}
+		}
+		// 更新 Tools 字段
+		request.SetTools(tools)
+	}
+
+	// 处理 Contents 中的 functionCall
+	for i := range request.Contents {
+		for j := range request.Contents[i].Parts {
+			part := &request.Contents[i].Parts[j]
+			if part.FunctionCall != nil && part.FunctionCall.FunctionName != "" {
+				original := part.FunctionCall.FunctionName
+				if len(original) > MaxToolNameLength {
+					compressed := CompressToolName(original)
+					part.FunctionCall.FunctionName = compressed
+					mapping[original] = compressed
+				}
+			}
+		}
+	}
+
+	// 处理 ToolConfig
+	if request.ToolConfig != nil && request.ToolConfig.FunctionCallingConfig != nil {
+		config := request.ToolConfig.FunctionCallingConfig
+		if len(config.AllowedFunctionNames) > 0 {
+			for i, name := range config.AllowedFunctionNames {
+				if len(name) > MaxToolNameLength {
+					original := name
+					compressed := CompressToolName(original)
+					config.AllowedFunctionNames[i] = compressed
+					mapping[original] = compressed
+				}
+			}
+		}
+	}
+
+	if len(mapping) > 0 {
+		StoreToolNameMapping(c, mapping)
+	}
 }

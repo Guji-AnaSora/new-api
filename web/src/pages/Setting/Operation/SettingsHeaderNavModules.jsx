@@ -45,6 +45,7 @@ export default function SettingsHeaderNavModules(props) {
     pricing: {
       enabled: true,
       requireAuth: false, // 默认不需要登录鉴权
+      showPrice: true, // 默认显示价格
     },
     docs: true,
     about: true,
@@ -85,6 +86,7 @@ export default function SettingsHeaderNavModules(props) {
       pricing: {
         enabled: true,
         requireAuth: false,
+        showPrice: true,
       },
       docs: true,
       about: true,
@@ -139,7 +141,13 @@ export default function SettingsHeaderNavModules(props) {
           modules.pricing = {
             enabled: modules.pricing,
             requireAuth: false, // 默认不需要登录鉴权
+            showPrice: true, // 默认显示价格
           };
+        }
+
+        // 确保新属性存在
+        if (modules.pricing && modules.pricing.showPrice === undefined) {
+          modules.pricing.showPrice = true;
         }
 
         setHeaderNavModules(modules);
@@ -151,6 +159,7 @@ export default function SettingsHeaderNavModules(props) {
           pricing: {
             enabled: true,
             requireAuth: false,
+            showPrice: true,
           },
           docs: true,
           about: true,
@@ -272,6 +281,7 @@ export default function SettingsHeaderNavModules(props) {
                           display: 'flex',
                           justifyContent: 'space-between',
                           alignItems: 'center',
+                          marginBottom: '8px',
                         }}
                       >
                         <div style={{ flex: 1, textAlign: 'left' }}>
@@ -304,6 +314,55 @@ export default function SettingsHeaderNavModules(props) {
                               headerNavModules.pricing?.requireAuth || false
                             }
                             onChange={handlePricingAuthChange}
+                            size='default'
+                          />
+                        </div>
+                      </div>
+
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <div style={{ flex: 1, textAlign: 'left' }}>
+                          <div
+                            style={{
+                              fontWeight: '500',
+                              fontSize: '12px',
+                              color: 'var(--semi-color-text-1)',
+                              marginBottom: '2px',
+                            }}
+                          >
+                            {t('显示价格')}
+                          </div>
+                          <Text
+                            type='secondary'
+                            size='small'
+                            style={{
+                              fontSize: '11px',
+                              color: 'var(--semi-color-text-2)',
+                              lineHeight: '1.4',
+                              display: 'block',
+                            }}
+                          >
+                            {t('控制模型广场是否展示模型价格列')}
+                          </Text>
+                        </div>
+                        <div style={{ marginLeft: '16px' }}>
+                          <Switch
+                            checked={
+                              headerNavModules.pricing?.showPrice !== false
+                            }
+                            onChange={(checked) => {
+                              const newModules = { ...headerNavModules };
+                              newModules.pricing = {
+                                ...newModules.pricing,
+                                showPrice: checked,
+                              };
+                              setHeaderNavModules(newModules);
+                            }}
                             size='default'
                           />
                         </div>
