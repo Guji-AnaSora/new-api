@@ -419,7 +419,7 @@ func compressToolChoice(request *dto.GeneralOpenAIRequest, mapping ToolNameMappi
 	}
 
 	// 处理字符串值（auto/none/required 不需要处理）
-	if choiceStr, ok := request.ToolChoice.(string); ok {
+	if _, ok := request.ToolChoice.(string); ok {
 		return // auto/none/required 不涉及具体名称
 	}
 
@@ -461,7 +461,7 @@ func compressClaudeToolNames(c *gin.Context, request *dto.ClaudeRequest) {
 		// Claude Tools 可能是 []any 或其他类型
 		toolsSlice, ok := request.Tools.([]any)
 		if ok && len(toolsSlice) > 0 {
-			normalTools, webSearchTools := dto.ProcessTools(toolsSlice)
+			normalTools, _ := dto.ProcessTools(toolsSlice)
 			// 只压缩普通工具的名称
 			for _, tool := range normalTools {
 				if tool.Name != "" && len(tool.Name) > MaxToolNameLength {
