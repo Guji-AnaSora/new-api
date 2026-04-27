@@ -31,3 +31,5 @@ data/
 
 token_estimator_test.go
 tmp/
+.test
+skills-lock.json
