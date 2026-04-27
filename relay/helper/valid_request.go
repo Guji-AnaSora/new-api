@@ -453,74 +453,78 @@ func compressToolChoice(request *dto.GeneralOpenAIRequest, mapping ToolNameMappi
 }
 
 // compressClaudeToolNames 压缩 Claude 格式请求中的超长工具名称
+// 直接操作 map[string]any 避免深拷贝导致修改丢失
 func compressClaudeToolNames(c *gin.Context, request *dto.ClaudeRequest) {
 	mapping := make(ToolNameMapping)
 
-	// 处理 Tools 字段
+	// 处理 Tools 字段（直接操作 map[string]any，避免 ProcessTools 类型断言失败）
 	if request.Tools != nil {
-		// Claude Tools 可能是 []any 或其他类型
 		toolsSlice, ok := request.Tools.([]any)
 		if ok && len(toolsSlice) > 0 {
-			normalTools, _ := dto.ProcessTools(toolsSlice)
-			// 只压缩普通工具的名称
-			for _, tool := range normalTools {
-				if tool.Name != "" && len(tool.Name) > MaxToolNameLength {
-					original := tool.Name
-					compressed := CompressToolName(original)
-					tool.Name = compressed
-					mapping[original] = compressed
+			for _, toolAny := range toolsSlice {
+				toolMap, ok := toolAny.(map[string]any)
+				if !ok {
+					continue
 				}
+				name, ok := toolMap["name"].(string)
+				if !ok || name == "" || len(name) <= MaxToolNameLength {
+					continue
+				}
+				compressed := CompressToolName(name)
+				toolMap["name"] = compressed
+				mapping[name] = compressed
 			}
-			// WebSearchTools 没有需要压缩的长名称字段
 		}
 	}
 
-	// 处理 Messages 中的 tool_use
+	// 处理 Messages 中的 tool_use（直接操作 map[string]any，避免 ParseContent 深拷贝丢失）
 	for i := range request.Messages {
-		contentSlice, err := request.Messages[i].ParseContent()
-		if err != nil || len(contentSlice) == 0 {
+		contentSlice, ok := request.Messages[i].Content.([]any)
+		if !ok || len(contentSlice) == 0 {
 			continue
 		}
 		for j := range contentSlice {
-			if contentSlice[j].Type == "tool_use" && contentSlice[j].Name != "" {
-				original := contentSlice[j].Name
-				if len(original) > MaxToolNameLength {
-					compressed := CompressToolName(original)
-					contentSlice[j].Name = compressed
-					mapping[original] = compressed
-				}
+			contentMap, ok := contentSlice[j].(map[string]any)
+			if !ok {
+				continue
 			}
+			if contentMap["type"] != "tool_use" {
+				continue
+			}
+			name, ok := contentMap["name"].(string)
+			if !ok || name == "" || len(name) <= MaxToolNameLength {
+				continue
+			}
+			compressed := CompressToolName(name)
+			contentMap["name"] = compressed
+			mapping[name] = compressed
 		}
 	}
 
 	// 处理 ToolChoice
 	if request.ToolChoice != nil {
-		// ToolChoice 可能是 ClaudeToolChoice 类型或 map
 		switch choice := request.ToolChoice.(type) {
 		case *dto.ClaudeToolChoice:
 			if choice.Name != "" && len(choice.Name) > MaxToolNameLength {
-				original := choice.Name
-				compressed := CompressToolName(original)
+				compressed := CompressToolName(choice.Name)
+				mapping[choice.Name] = compressed
 				choice.Name = compressed
-				mapping[original] = compressed
 			}
 		case dto.ClaudeToolChoice:
 			if choice.Name != "" && len(choice.Name) > MaxToolNameLength {
-				original := choice.Name
-				compressed := CompressToolName(original)
+				compressed := CompressToolName(choice.Name)
+				mapping[choice.Name] = compressed
 				request.ToolChoice = &dto.ClaudeToolChoice{
 					Type:                   choice.Type,
 					Name:                   compressed,
 					DisableParallelToolUse: choice.DisableParallelToolUse,
 				}
-				mapping[original] = compressed
 			}
 		case map[string]interface{}:
 			if name, ok := choice["name"].(string); ok && name != "" && len(name) > MaxToolNameLength {
-				original := name
-				compressed := CompressToolName(original)
+				compressed := CompressToolName(name)
 				choice["name"] = compressed
-				mapping[original] = compressed
+				mapping[name] = compressed
 			}
 		}
 	}

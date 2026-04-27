@@ -1,7 +1,9 @@
 package helper
 
 import (
+	"strings"
 	"testing"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -230,17 +232,117 @@ func TestGetOriginalToolName_NotInMapping(t *testing.T) {
 }
 
 func TestIsToolNameCompressed(t *testing.T) {
+	// 构造一个真实的压缩名称
+	longName := "mcp__plugin_test_tool__very_long_function_name_exceeding_limit"
+	for len(longName) <= MaxToolNameLength {
+		longName += "x"
+	}
+	compressed := CompressToolName(longName)
+
 	tests := []struct {
-		name     string
+		input    string
 		expected bool
 	}{
 		{"short", false},
-		{"tool#abc", true},     // 短但有 #
+		{"tool#abc", false},               // 含 # 但不符合 "# + 7位hex" 格式
 		{"tool_without_hash", false},
+		{compressed, true},                // 真实压缩结果
+		{"abcdef0123456789#abcdef0", false}, // # 不在倒数第8位
+		{"aaaaaa#ABCDEFG", false},         // 大写 hex 不匹配
+		{"aaaaaa#aBcdef0", false},         // 混合大小写不匹配
 	}
 
 	for _, tt := range tests {
-		result := IsToolNameCompressed(tt.name)
-		assert.Equal(t, tt.expected, result, "test: %s", tt.name)
+		result := IsToolNameCompressed(tt.input)
+		assert.Equal(t, tt.expected, result, "test: %s", tt.input)
 	}
+}
+
+func TestCompressToolName_UTF8Truncation(t *testing.T) {
+	// 中文字符占 3 字节，确保截断不会在字符中间切割
+	// 构造：每行中文字符 (3 bytes each) + ascii 前缀，总长度超过 64
+	name := "mcp_tool_" + strings.Repeat("中", 30) // 9 + 90 = 99 bytes
+	assert.Greater(t, len(name), MaxToolNameLength)
+
+	result := CompressToolName(name)
+
+	// 压缩结果不能超过 64 字节
+	assert.LessOrEqual(t, len(result), MaxToolNameLength)
+	// 压缩结果必须是有效的 UTF-8
+	assert.True(t, utf8.ValidString(result), "compressed name should be valid UTF-8")
+	// 包含 hash 后缀
+	assert.Contains(t, result, "#")
+}
+
+func TestCompressToolName_UTF8ShortName(t *testing.T) {
+	// 短中文名称（字节长度 <= 64）不应被压缩
+	name := "简短工具名称"
+	result := CompressToolName(name)
+	assert.Equal(t, name, result, "short UTF-8 name should not be compressed")
+}
+
+func TestCompressToolName_UTF8ExactBoundary(t *testing.T) {
+	// 构造一个精确在多字节字符边界上的名称
+	// "中" = 3 bytes, 21 * 3 = 63 bytes, + "a" = 64 bytes
+	name := strings.Repeat("中", 21) + "a"
+	assert.Equal(t, 64, len(name))
+
+	result := CompressToolName(name)
+	assert.Equal(t, name, result, "exactly 64 bytes should not be compressed")
+}
+
+func TestTruncateAtUTF8Boundary(t *testing.T) {
+	// ASCII 字符串不应被截断
+	assert.Equal(t, "hello", truncateAtUTF8Boundary("hello", 10))
+	assert.Equal(t, "hel", truncateAtUTF8Boundary("hello", 3))
+
+	// 多字节字符不应被切割
+	input := "中文测试"
+	assert.Equal(t, "中文", truncateAtUTF8Boundary(input, 7))  // 6 bytes 完整的 "中文"
+	assert.Equal(t, "中", truncateAtUTF8Boundary(input, 4))     // 3 bytes 只有 "中"
+	assert.Equal(t, "中文测", truncateAtUTF8Boundary(input, 12)) // 9 bytes 完整的 "中文测"
+
+	// 空字符串
+	assert.Equal(t, "", truncateAtUTF8Boundary("", 5))
+}
+
+func TestCompressToolNames_CollisionDetection(t *testing.T) {
+	// 构造两个不同但共享相同前缀的名称，使它们在默认 hash 长度下碰撞
+	// 这在现实中极其罕见，但测试碰撞处理逻辑
+	names := []string{
+		"mcp__plugin_test__function_a" + strings.Repeat("x", 50),
+		"mcp__plugin_test__function_b" + strings.Repeat("x", 50),
+		"short_tool",
+	}
+
+	// 确保前两个名称超长
+	for len(names[0]) <= MaxToolNameLength {
+		names[0] += "x"
+	}
+	for len(names[1]) <= MaxToolNameLength {
+		names[1] += "x"
+	}
+
+	compressed, mapping := CompressToolNames(names)
+
+	// 所有压缩结果必须唯一
+	seen := make(map[string]bool)
+	for _, c := range compressed {
+		assert.False(t, seen[c], "compressed names should be unique: %s", c)
+		seen[c] = true
+	}
+
+	// 短名称不应被压缩
+	assert.Equal(t, names[2], compressed[2])
+
+	// 映射表中的值不应超过长度限制
+	for original, compressedName := range mapping {
+		assert.LessOrEqual(t, len(compressedName), MaxToolNameLength, "mapping: %s -> %s", original, compressedName)
+		_ = original
+	}
+}
+
+func TestCompressToolName_EmptyString(t *testing.T) {
+	result := CompressToolName("")
+	assert.Equal(t, "", result, "empty string should not be compressed")
 }

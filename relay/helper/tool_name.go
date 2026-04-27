@@ -3,7 +3,7 @@ package helper
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"strings"
+	"unicode/utf8"
 
 	"github.com/gin-gonic/gin"
 )
@@ -24,6 +24,17 @@ const (
 // ToolNameMapping 存储原始名称到截断名称的映射
 type ToolNameMapping map[string]string // originalName -> compressedName
 
+// truncateAtUTF8Boundary 截断字符串到最大字节数，确保不在多字节 UTF-8 字符中间切割
+func truncateAtUTF8Boundary(s string, maxBytes int) string {
+	if len(s) <= maxBytes {
+		return s
+	}
+	for maxBytes > 0 && !utf8.RuneStart(s[maxBytes]) {
+		maxBytes--
+	}
+	return s[:maxBytes]
+}
+
 // CompressToolName 压缩超长的工具名称
 // 如果名称长度 <= 64，直接返回原名称
 // 如果名称长度 > 64，使用截断 + hash 后缀策略确保唯一性
@@ -32,33 +43,57 @@ func CompressToolName(name string) string {
 		return name
 	}
 
-	// 计算原始名称的 hash 作为唯一标识
 	hash := sha256.Sum256([]byte(name))
 	// 生成 7 字符 hash + "#" = 8 字符后缀
 	hashSuffix := "#" + hex.EncodeToString(hash[:])[:ToolNameHashSuffixLength-1]
 
-	// 截断名称保留有意义的前缀部分
-	// 截断长度 = 64 - hash后缀长度
 	truncatedLength := MaxToolNameLength - ToolNameHashSuffixLength
-	truncatedName := name[:truncatedLength]
+	truncatedName := truncateAtUTF8Boundary(name, truncatedLength)
 
 	return truncatedName + hashSuffix
 }
 
 // CompressToolNames 批量压缩工具名称，并返回映射表
+// 包含碰撞检测：当两个名称产生相同压缩结果时，自动扩展 hash 后缀
 func CompressToolNames(names []string) (compressedNames []string, mapping ToolNameMapping) {
 	mapping = make(ToolNameMapping)
 	compressedNames = make([]string, len(names))
+	seen := make(map[string]string) // compressedName -> originalName
 
 	for i, name := range names {
 		compressed := CompressToolName(name)
-		compressedNames[i] = compressed
 		if compressed != name {
+			if orig, exists := seen[compressed]; exists && orig != name {
+				compressed = resolveCollision(name, seen)
+			}
+			seen[compressed] = name
 			mapping[name] = compressed
 		}
+		compressedNames[i] = compressed
 	}
 
 	return compressedNames, mapping
+}
+
+// resolveCollision 碰撞时扩展 hash 后缀直到找到唯一名称
+func resolveCollision(name string, seen map[string]string) string {
+	hash := sha256.Sum256([]byte(name))
+	hashHex := hex.EncodeToString(hash[:])
+
+	for hashLen := ToolNameHashSuffixLength + 1; hashLen < MaxToolNameLength; hashLen++ {
+		hashSuffix := "#" + hashHex[:hashLen-1]
+		truncLen := MaxToolNameLength - hashLen
+		if truncLen <= 0 {
+			break
+		}
+		truncated := truncateAtUTF8Boundary(name, truncLen)
+		candidate := truncated + hashSuffix
+		if _, exists := seen[candidate]; !exists {
+			return candidate
+		}
+	}
+	// Fallback: 使用完整 hash（实际不会触发）
+	return hashHex[:MaxToolNameLength]
 }
 
 // StoreToolNameMapping 将名称映射表存储到 gin.Context 中
@@ -113,6 +148,19 @@ func GetOriginalToolName(c *gin.Context, compressedName string) string {
 }
 
 // IsToolNameCompressed 判断工具名称是否已被压缩
+// 检查末尾是否为 "# + 7位hex" 的压缩后缀格式
 func IsToolNameCompressed(name string) bool {
-	return len(name) <= MaxToolNameLength && strings.Contains(name, "#")
+	if len(name) > MaxToolNameLength || len(name) < ToolNameHashSuffixLength {
+		return false
+	}
+	suffix := name[len(name)-ToolNameHashSuffixLength:]
+	if suffix[0] != '#' {
+		return false
+	}
+	for _, c := range suffix[1:] {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+			return false
+		}
+	}
+	return true
 }
