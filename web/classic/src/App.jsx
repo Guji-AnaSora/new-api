@@ -55,6 +55,8 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const About = lazy(() => import('./pages/About'));
 const UserAgreement = lazy(() => import('./pages/UserAgreement'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const SkillMarketplace = lazy(() => import('./pages/SkillMarketplace'));
+const SkillAdmin = lazy(() => import('./pages/SkillAdmin'));
 
 function DynamicOAuth2Callback() {
   const { provider } = useParams();
@@ -364,6 +366,37 @@ function App() {
             <Suspense fallback={<Loading></Loading>} key={location.pathname}>
               <Chat />
             </Suspense>
+          }
+        />
+        {/* Skill Marketplace - Public */}
+        <Route
+          path='/skills'
+          element={
+            <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+              <SkillMarketplace />
+            </Suspense>
+          }
+        />
+        {/* Skill Marketplace - Console (Logged-in users) */}
+        <Route
+          path='/console/skill-marketplace'
+          element={
+            <PrivateRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <SkillMarketplace />
+              </Suspense>
+            </PrivateRoute>
+          }
+        />
+        {/* Skill Admin - Admin only */}
+        <Route
+          path='/console/skills'
+          element={
+            <AdminRoute>
+              <Suspense fallback={<Loading></Loading>} key={location.pathname}>
+                <SkillAdmin />
+              </Suspense>
+            </AdminRoute>
           }
         />
         {/* 方便使用chat2link直接跳转聊天... */}

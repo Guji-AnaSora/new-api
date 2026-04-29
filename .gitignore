@@ -38,5 +38,12 @@ token_estimator_test.go
 tmp/
 .test
 skills-lock.json
+# Build artifacts
+.vite/
+*.log
+package-lock.json
+vite_test.html
 
+# User uploads
+uploads/
 tmp/

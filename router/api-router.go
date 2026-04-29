@@ -379,5 +379,29 @@ func SetApiRouter(router *gin.Engine) {
 			deploymentsRoute.POST("/:id/extend", controller.ExtendDeployment)
 			deploymentsRoute.DELETE("/:id", controller.DeleteDeployment)
 		}
+
+		// Skill Marketplace - admin routes must be registered BEFORE generic :id routes
+		adminSkillRoute := apiRouter.Group("/skills/admin")
+		adminSkillRoute.Use(middleware.AdminAuth())
+		{
+			adminSkillRoute.GET("/", controller.AdminGetSkills)
+			adminSkillRoute.POST("/upload", controller.UploadSkillFile)
+			adminSkillRoute.POST("/image", controller.UploadSkillImage)
+			adminSkillRoute.POST("/", controller.AdminCreateSkill)
+			adminSkillRoute.PUT("/:id", controller.AdminUpdateSkill)
+			adminSkillRoute.DELETE("/:id", controller.AdminDeleteSkill)
+			// Skill categories management
+			adminSkillRoute.GET("/categories", controller.AdminGetSkillCategories)
+			adminSkillRoute.POST("/categories", controller.AdminCreateSkillCategory)
+			adminSkillRoute.PUT("/categories/:id", controller.AdminUpdateSkillCategory)
+			adminSkillRoute.DELETE("/categories/:id", controller.AdminDeleteSkillCategory)
+		}
+		skillRoute := apiRouter.Group("/skills")
+		{
+			skillRoute.GET("/", controller.GetSkills)
+			skillRoute.GET("/categories", controller.GetSkillCategories)
+			skillRoute.GET("/:id", controller.GetSkill)
+			skillRoute.GET("/:id/download", controller.DownloadSkillFile)
+		}
 	}
 }
