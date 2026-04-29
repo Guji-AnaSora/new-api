@@ -56,7 +56,7 @@ export default defineConfig({
     }),
   ],
   optimizeDeps: {
-    force: true,
+    include: ['eventemitter3', '@visactor/vchart', '@visactor/react-vchart'],
     esbuildOptions: {
       loader: {
         '.js': 'jsx',
@@ -91,15 +91,23 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://127.0.0.1:3001',
         changeOrigin: true,
       },
       '/mj': {
-        target: 'http://localhost:3000',
+        target: 'http://127.0.0.1:3001',
         changeOrigin: true,
       },
       '/pg': {
-        target: 'http://localhost:3000',
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+      },
+      '/skill-market-icon': {
+        target: 'http://127.0.0.1:3001',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://127.0.0.1:3001',
         changeOrigin: true,
       },
     },

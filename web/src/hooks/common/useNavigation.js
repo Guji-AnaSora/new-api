@@ -49,6 +49,11 @@ export const useNavigation = (t, docsLink, headerNavModules) => {
         itemKey: 'pricing',
         to: '/pricing',
       },
+      {
+        text: t('Skill 集市'),
+        itemKey: 'skills',
+        to: '/skills',
+      },
       ...(docsLink
         ? [
             {

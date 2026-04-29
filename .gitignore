@@ -31,3 +31,12 @@ data/
 
 token_estimator_test.go
 tmp/
+
+# Build artifacts
+.vite/
+*.log
+package-lock.json
+vite_test.html
+
+# User uploads
+uploads/
