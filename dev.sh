@@ -64,14 +64,14 @@ fi
 echo -e "${BLUE}>>> 检查后端依赖...${NC}"
 go mod download
 
-# 4. 初始化前端依赖
+# 4. 初始化前端依赖 (classic 主题)
 echo -e "${BLUE}>>> 检查前端依赖 (使用 Bun)...${NC}"
-cd web
+cd web/classic
 if [ ! -d "node_modules" ]; then
     echo -e "${YELLOW}>>> 正在安装前端依赖，这可能需要一点时间...${NC}"
     bun install
 fi
-cd ..
+cd ../..
 
 # 5. 确保 web/dist 存在 (Go embed 必须)
 if [ ! -d "web/dist" ]; then
@@ -94,10 +94,10 @@ fi
 BACKEND_PID=$!
 
 # 启动前端
-cd web
+cd web/classic
 bun run dev &
 FRONTEND_PID=$!
-cd ..
+cd ../..
 
 echo -e "${GREEN}>>> 服务已全部启动！${NC}"
 echo -e "${BLUE}>>> 后端: http://localhost:$BACKEND_PORT${NC}"

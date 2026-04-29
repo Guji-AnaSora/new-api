@@ -107,10 +107,10 @@ echo.
 echo 检查后端依赖...
 go mod download
 
-REM 4. 初始化前端依赖
+REM 4. 初始化前端依赖 (classic 主题)
 echo.
 echo 检查前端依赖...
-pushd web
+pushd web\classic
 if not exist "node_modules" (
     echo 正在安装前端依赖，这可能需要一点时间...
     if !USE_NPM! equ 1 (
@@ -143,7 +143,7 @@ REM 等待后端启动
 timeout /t 2 /nobreak >nul
 
 REM 启动前端
-pushd web
+pushd web\classic
 if !USE_NPM! equ 1 (
     start "new-api-frontend" cmd /c "npm run dev"
 ) else (
