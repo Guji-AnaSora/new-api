@@ -6,9 +6,9 @@ tmp_dir = "tmp"
 
 [build]
   # 编译命令
-  cmd = "go build -o ./tmp/main.exe ."
+  cmd = "go build -o ./tmp/main ."
   # 运行编译后的二进制文件
-  bin = "./tmp/main.exe"
+  bin = "./tmp/main"
   # 监听的文件扩展名
   include_ext = ["go", "tpl", "tmpl", "html", "yaml", "yml", "json", "env"]
   # 忽略的目录
