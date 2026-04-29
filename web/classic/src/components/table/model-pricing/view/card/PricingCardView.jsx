@@ -72,6 +72,7 @@ const PricingCardView = ({
   tokenUnit,
   displayPrice,
   showRatio,
+  showPrice,
   t,
   selectedRowKeys = [],
   setSelectedRowKeys,
