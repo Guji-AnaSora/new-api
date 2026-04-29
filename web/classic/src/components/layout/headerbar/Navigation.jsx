@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { ExternalLink } from 'lucide-react';
 import SkeletonWrapper from '../components/SkeletonWrapper';
 
 const Navigation = ({
@@ -48,7 +49,8 @@ const Navigation = ({
             rel='noopener noreferrer'
             className={commonLinkClasses}
           >
-            {linkContent}
+            {link.text}
+            <ExternalLink size={14} className='ml-0.5 opacity-60' />
           </a>
         );
       }

@@ -49,6 +49,8 @@ const routerMap = {
   deployment: '/console/deployment',
   playground: '/console/playground',
   personal: '/console/personal',
+  skills: '/console/skills',
+  skillMarketplace: '/console/skill-marketplace',
 };
 
 const SiderBar = ({ onNavigate = () => {} }) => {
@@ -104,6 +106,11 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         to: '/task',
         className:
           localStorage.getItem('enable_task') === 'true' ? '' : 'tableHiddle',
+      },
+      {
+        text: t('Skill 集市'),
+        itemKey: 'skillMarketplace',
+        to: '/console/skill-marketplace',
       },
     ];
 
@@ -188,6 +195,12 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         itemKey: 'setting',
         to: '/setting',
         className: isRoot() ? '' : 'tableHiddle',
+      },
+      {
+        text: t('Skill 管理'),
+        itemKey: 'skills',
+        to: '/console/skills',
+        className: isAdmin() ? '' : 'tableHiddle',
       },
     ];
 

@@ -1,0 +1,47 @@
+
+   - 
+                                                                                                                        
+Name                                Id                                  Version                    Match        Source
+-----------------------------------------------------------------------------------------------------------------------
+Bundle Generator                    9NBLGGH43PMQ                        Unknown                                 msstore
+Bunble                              XPFP021V93FT6Z                      Unknown                                 msstore
+Bun                                 Oven-sh.Bun                         1.3.13                                  winget
+Bun Baseline Profile                Oven-sh.Bun.BaselineProfile         1.3.13                     Command: bun winget
+Bun Profile                         Oven-sh.Bun.Profile                 1.3.13                     Command: bun winget
+monorepo-hash                       EDM115.monorepo-hash                2.2.0                      Tag: bun     winget
+Template Bun Executable             Flowscripter.template-bun-executab… 1.1.27                     Tag: bun     winget
+Bun Baseline                        Oven-sh.Bun.Baseline                1.3.13                     Tag: bun     winget
+javascript-package-delegator        the-code-fixer-23.javascript-packa… 4.0.0                      Tag: bun     winget
+Bunker                              Bunker.Bunker                       0.1.0                                   winget
+ISO Creator                         Bunny-Wabbit.ISOCreator             1.0.0                                   winget
+Ubuntu                              Canonical.Ubuntu                    2204.1.8.0                              winget
+Ubuntu 18.04 LTS                    Canonical.Ubuntu.1804               1804.6.4.0                              winget
+Ubuntu 20.04 LTS                    Canonical.Ubuntu.2004               2004.6.16.0                             winget
+Ubuntu 22.04 LTS                    Canonical.Ubuntu.2204               2204.2.47.0                             winget
+Ubuntu 24.04 LTS                    Canonical.Ubuntu.2404               2404.0.5.0                              winget
+Ubuntu Pro for WSL                  Canonical.UbuntuProforWSL           1.0.6                                   winget
+Webex                               Cisco.Webex.Bundle                  45.12.0.33788                           winget
+ESBUnitConv                         ESBConsultancy.ESBUnitConv          7.4.0.0                                 winget
+ESBUnitConv Pro TRIAL               ESBConsultancy.ESBUnitConv.Pro.Tri… 10.4.1.0                                winget
+Google Chrome OS Readiness Tool Bu… Google.ChromeOSReadinessToolBundle  1.0.4.0                                 winget
+Humble App                          HumbleBundle.HumbleApp              1.1.8+411                               winget
+Bunsenite                           Hyperpolymath.Bunsenite             1.0.2                                   winget
+Microsoft ASP.NET Core Hosting Bun… Microsoft.DotNet.HostingBundle.10   10.0.7                                  winget
+Microsoft ASP.NET Core Hosting Bun… Microsoft.DotNet.HostingBundle.3_1  3.1.32                                  winget
+Microsoft ASP.NET Core Hosting Bun… Microsoft.DotNet.HostingBundle.5    5.0.17                                  winget
+Microsoft ASP.NET Core Hosting Bun… Microsoft.DotNet.HostingBundle.6    6.0.36                                  winget
+Microsoft ASP.NET Core Hosting Bun… Microsoft.DotNet.HostingBundle.7    7.0.20                                  winget
+Microsoft ASP.NET Core Hosting Bun… Microsoft.DotNet.HostingBundle.8    8.0.26                                  winget
+Microsoft ASP.NET Core Hosting Bun… Microsoft.DotNet.HostingBundle.9    9.0.15                                  winget
+Microsoft ASP.NET Core Hosting Bun… Microsoft.DotNet.HostingBundle.Pre… 11.0.0-preview.3.26207.106              winget
+MKVToolNix                          MoritzBunkus.MKVToolNix             98.0.0                                  winget
+Nx Meta Bundle                      NetworkOptix.NxMeta.Bundle          6.1.1.42624                             winget
+Nx Witness Bundle                   NetworkOptix.NxWitness.Bundle       6.1.1.42624                             winget
+RealLegal E-Transcript Bundle View… ThomsonReuters.E-TranscriptBundleV… 6.9.0.202                               winget
+ExeBundle                           fmuecke.ExeBundle                   0.94                                    winget
+I2P Easy Install Bundle             i2p.I2PEasyInstallBundle            2.11.0                                  winget
+evbunpack                           mos9527.evbunpack                   0.2.6                                   winget
+WSLtty                              Mintty.WSLtty                       3.8.0.3                    Tag: ubuntu  winget
+YTDownloader                        aandrew-me.ytDownloader             3.20.2                     Tag: ubuntu  winget
+alarm-cron                          bl00mber.alarm-cron                 0.1.1                      Tag: ubuntu  winget
+SODA for SPARC                      fairdataihub.SODA-for-SPARC         17.1.0                     Tag: ubuntu  winget

@@ -280,6 +280,8 @@ func migrateDB() error {
 		&SubscriptionPreConsumeRecord{},
 		&CustomOAuthProvider{},
 		&UserOAuthBinding{},
+		&Skill{},
+		&SkillCategory{},
 	)
 	if err != nil {
 		return err
@@ -292,6 +294,9 @@ func migrateDB() error {
 		if err := DB.AutoMigrate(&SubscriptionPlan{}); err != nil {
 			return err
 		}
+	}
+	if err := InitDefaultSkillCategories(); err != nil {
+		common.SysLog("failed to init default skill categories: " + err.Error())
 	}
 	return nil
 }
