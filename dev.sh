@@ -64,14 +64,14 @@ fi
 echo -e "${BLUE}>>> 检查后端依赖...${NC}"
 go mod download
 
-# 4. 初始化前端依赖
+# 4. 初始化前端依赖 (classic 主题)
 echo -e "${BLUE}>>> 检查前端依赖 (使用 Bun)...${NC}"
-cd web
+cd web/classic
 if [ ! -d "node_modules" ]; then
     echo -e "${YELLOW}>>> 正在安装前端依赖，这可能需要一点时间...${NC}"
     bun install
 fi
-cd ..
+cd ../..
 
 # 5. 确保 web/dist 存在 (Go embed 必须)
 if [ ! -d "web/dist" ]; then
@@ -94,17 +94,32 @@ fi
 BACKEND_PID=$!
 
 # 启动前端
-cd web
+cd web/classic
 bun run dev &
 FRONTEND_PID=$!
-cd ..
+cd ../..
 
 echo -e "${GREEN}>>> 服务已全部启动！${NC}"
 echo -e "${BLUE}>>> 后端: http://localhost:$BACKEND_PORT${NC}"
 echo -e "${BLUE}>>> 前端: http://localhost:$FRONTEND_PORT (支持热更新)${NC}"
 echo -e "${YELLOW}>>> 按 Ctrl+C 停止所有服务${NC}"
 
-# 清理逻辑
-trap "echo -e '\n${BLUE}>>> 正在清理并退出...${NC}'; kill $BACKEND_PID $FRONTEND_PID; exit" INT TERM EXIT
+# 清理逻辑 (使用函数而非内联命令，避免 trap 嵌套问题)
+cleanup() {
+    echo -e "\n${BLUE}>>> 正在清理并退出...${NC}"
+    # 先发 SIGINT 让进程自己清理子进程
+    kill -INT $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    sleep 1
+    # 再发 SIGTERM
+    kill -TERM $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    sleep 1
+    # 如果还有残留，强制杀掉（含子进程）
+    kill -KILL $BACKEND_PID $FRONTEND_PID 2>/dev/null
+    # 清理残留的后台子进程（air 启动的 go run、bun 启动的 vite node 等）
+    pkill -P $BACKEND_PID 2>/dev/null
+    pkill -P $FRONTEND_PID 2>/dev/null
+    exit 0
+}
+trap cleanup INT TERM
 
 wait
